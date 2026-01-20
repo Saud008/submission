@@ -18,7 +18,7 @@ The people using this are mostly backend Python developers who are building thin
 
 What makes it useful is that it fits naturally into async Python. Instead of blocking or messing around with thread pools, you just `await consumer.getmany()` and it works alongside your other async code - HTTP handlers, database queries, WebSocket connections, whatever.
 
-The consumer has two ways to get partitions: automatic assignment through consumer groups (which is the normal way most people use Kafka) and manual assignment where you tell it exactly which partitions to read. PR #232 is about adding that second option. (245 words)
+The consumer has two ways to get partitions: automatic assignment through consumer groups (which is the normal way most people use Kafka) and manual assignment where you tell it exactly which partitions to read. PR #232 is about adding that second option.
 
 ---
 
@@ -40,7 +40,7 @@ Another is static partition assignment. Some systems are set up where each insta
 
 Also useful for debugging. If there's something weird in partition 7, you want to point a consumer at just that partition to check it out.
 
-The implementation makes subscribe and assign mutually exclusive - calling one clears the other. Otherwise you'd have confusing situations where both are sort of active. (270 words)
+The implementation makes subscribe and assign mutually exclusive - calling one clears the other. Otherwise you'd have confusing situations where both are sort of active.
 
 ---
 
@@ -53,16 +53,6 @@ Here's what I think needs to work for this to be considered done:
 ✓ **AC2:** When you call `assign()` after previously calling `subscribe()`, the subscription should be cleared. The consumer should switch to manual assignment mode.
 
 ✓ **AC3:** When you call `subscribe()` after previously calling `assign()`, the assignment should be cleared. The consumer should switch to group mode and do the normal join process.
-
-✓ **AC4:** The `assignment()` method should return whatever partitions are currently assigned - doesn't matter if they came from manual assign or from the coordinator.
-
-✓ **AC5:** Seeking should work normally on assigned partitions. So `seek()`, `seek_to_beginning()`, and `seek_to_end()` should all behave the same as they do with subscribed partitions.
-
-✓ **AC6:** If a partition leader changes (broker goes down, leadership moves), the consumer should handle it gracefully. It should notice via error responses, refresh metadata, reconnect to the new leader, and keep consuming. No crashes.
-
-✓ **AC7:** When you call `assign([])` with an empty list, it should stop all fetching. The `assignment()` method should return an empty set.
-
-✓ **AC8:** If `group_id` is configured and you're using assign mode, offset commits should still work. And when you restart and assign the same partitions again, it should resume from the committed offsets.
 
 ---
 
@@ -135,7 +125,7 @@ Main files that need modification:
 - `aiokafka/consumer/fetcher.py` - building fetch requests for assigned partitions
 - `tests/test_consumer.py` - need test coverage for all this
 
-Follow whatever patterns already exist in the codebase. Use asyncio properly. Add type hints. Write docstrings for the public methods. And don't break existing subscribe behavior - that needs to keep working exactly as before. (440 words)
+Follow whatever patterns already exist in the codebase. Use asyncio properly. Add type hints. Write docstrings for the public methods. And don't break existing subscribe behavior - that needs to keep working exactly as before.
 
 ---
 
