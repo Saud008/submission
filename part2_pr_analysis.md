@@ -17,7 +17,7 @@ I went through all 10 PRs and picked these two because I could actually follow w
 
 This PR fixes how the library handles connections when things go wrong - like when a broker drops or the network hiccups. Before this fix, the client could get stuck in weird states after a disconnection. Sometimes it wouldn't reconnect properly, or it would try to process half-received messages, which is bad news.
 
-The fix makes sure that when a connection drops, everything gets cleaned up correctly before trying to reconnect. It's the kind of bug that only shows up in production when you have flaky networks or rolling broker restarts. (100 words)
+The fix makes sure that when a connection drops, everything gets cleaned up correctly before trying to reconnect. It's the kind of bug that only shows up in production when you have flaky networks or rolling broker restarts.
 
 ### Technical Changes
 
@@ -28,7 +28,7 @@ The fix makes sure that when a connection drops, everything gets cleaned up corr
 
 Connections now follow a strict state machine: CONNECTING → CONNECTED → DISCONNECTED. On disconnect, the code: (1) cancels in-flight requests, (2) flushes the receive buffer, (3) notifies waiters, (4) attempts reconnect.
 
-The key fix was buffer handling - previously, partial messages could persist across reconnects and cause parsing errors. Now buffers are wiped on any disconnect event. (60 words)
+The key fix was buffer handling - previously, partial messages could persist across reconnects and cause parsing errors. Now buffers are wiped on any disconnect event. 
 
 ### Potential Impact
 
@@ -38,7 +38,7 @@ The key fix was buffer handling - previously, partial messages could persist acr
 - Producer and consumer both benefit since they depend on connections
 
 **Who cares:**
-Anyone running aiokafka in production where networks aren't perfect. If you've had random failures during broker maintenance or network blips, this should help. The changes are backward compatible - nothing breaks if you upgrade. (70 words)
+Anyone running aiokafka in production where networks aren't perfect. If you've had random failures during broker maintenance or network blips, this should help. The changes are backward compatible - nothing breaks if you upgrade.
 
 ---
 
@@ -50,7 +50,7 @@ Anyone running aiokafka in production where networks aren't perfect. If you've h
 
 This adds manual partition assignment to the consumer. Normally when you use Kafka consumers, you join a consumer group and Kafka decides which partitions you get. But sometimes you want to say "I specifically want partition 0 and 3, nothing else."
 
-The PR adds an `assign()` method that lets you do exactly that. It's useful for things like replay systems where you need to read from specific partitions, or when you're doing partition-aware processing and each instance handles specific partitions. The Java Kafka client has this same feature, so this brings aiokafka to parity. (110 words)
+The PR adds an `assign()` method that lets you do exactly that. It's useful for things like replay systems where you need to read from specific partitions, or when you're doing partition-aware processing and each instance handles specific partitions. The Java Kafka client has this same feature, so this brings aiokafka to parity.
 
 ### Technical Changes
 
@@ -63,7 +63,7 @@ Consumer now supports two mutually exclusive modes:
 - **Subscribe mode:** Group coordination assigns partitions dynamically
 - **Assign mode:** User specifies exact `TopicPartition` list, skips JoinGroup/SyncGroup protocols
 
-The subscription state tracker stores a mode flag. Calling `assign()` bypasses group coordination and fetches directly from specified partitions. Offset commits still work if `group_id` is set. Switching modes auto-clears the previous assignment. (60 words)
+The subscription state tracker stores a mode flag. Calling `assign()` bypasses group coordination and fetches directly from specified partitions. Offset commits still work if `group_id` is set. Switching modes auto-clears the previous assignment.
 
 ### Potential Impact
 
@@ -73,7 +73,7 @@ The subscription state tracker stores a mode flag. Calling `assign()` bypasses g
 - `aiokafka/consumer/fetcher.py` - had to handle assigned partitions
 
 **Who cares:**
-People who need control over which partitions they read from. Replay systems, partition-aware processors, testing scenarios. The change is backward compatible - if you don't use `assign()`, nothing changes for you. But if you do use it, you have to understand that you're now responsible for handling partition failures yourself since there's no rebalancing. (85 words)
+People who need control over which partitions they read from. Replay systems, partition-aware processors, testing scenarios. The change is backward compatible - if you don't use `assign()`, nothing changes for you. But if you do use it, you have to understand that you're now responsible for handling partition failures yourself since there's no rebalancing.
 
 ---
 
